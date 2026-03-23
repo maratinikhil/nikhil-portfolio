@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "DM Sans", sans-serif;
+  overflow-x: clip;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@layer base {
+  :root {
+    --background: 210 25% 8%;
+    --foreground: 210 10% 95%;
+    --card: 220 25% 14%;
+    --card-foreground: 210 10% 95%;
+    --popover: 220 25% 14%;
+    --popover-foreground: 210 10% 95%;
+    --primary: 190 100% 50%;
+    --primary-foreground: 210 25% 8%;
+    --secondary: 220 100% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 20% 18%;
+    --muted-foreground: 210 10% 65%;
+    --accent: 14 100% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --border: 220 20% 22%;
+    --input: 220 20% 22%;
+    --ring: 190 100% 50%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 210 25% 8%;
+    --foreground: 210 10% 95%;
+    --card: 220 25% 14%;
+    --card-foreground: 210 10% 95%;
+    --popover: 220 25% 14%;
+    --popover-foreground: 210 10% 95%;
+    --primary: 190 100% 50%;
+    --primary-foreground: 210 25% 8%;
+    --secondary: 220 100% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 20% 18%;
+    --muted-foreground: 210 10% 65%;
+    --accent: 14 100% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --border: 220 20% 22%;
+    --input: 220 20% 22%;
+    --ring: 190 100% 50%;
+  }
+
+  :root {
+    --sidebar-background: 220 25% 14%;
+    --sidebar-foreground: 210 10% 95%;
+    --sidebar-primary: 190 100% 50%;
+    --sidebar-primary-foreground: 210 25% 8%;
+    --sidebar-accent: 220 20% 18%;
+    --sidebar-accent-foreground: 210 10% 95%;
+    --sidebar-border: 220 20% 22%;
+    --sidebar-ring: 190 100% 50%;
+  }
+
+  .dark {
+    --sidebar-background: 220 25% 14%;
+    --sidebar-foreground: 210 10% 95%;
+    --sidebar-primary: 190 100% 50%;
+    --sidebar-primary-foreground: 210 25% 8%;
+    --sidebar-accent: 220 20% 18%;
+    --sidebar-accent-foreground: 210 10% 95%;
+    --sidebar-border: 220 20% 22%;
+    --sidebar-ring: 190 100% 50%;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .skill-badge {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border text-sm font-medium transition-all duration-300 hover:border-primary hover:shadow-lg hover:shadow-primary/20;
+  }
+
+  .tech-card {
+    @apply bg-card rounded-2xl p-6 border border-border transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent;
+  }
+
+  .hero-overlay {
+    @apply absolute inset-0 bg-gradient-to-b from-background/95 via-background/85 to-background;
+  }
+}
