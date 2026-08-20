@@ -24,7 +24,7 @@
 //     const particles = Array.from({ length: 55 }, () => ({
 //       x: Math.random() * canvas.width,
 //       y: Math.random() * canvas.height,
-//       vx: (Math.random() - 0.5) * 0.35,
+//       vx: (Math.random() - 0.5) * 0.35,npm
 //       vy: (Math.random() - 0.5) * 0.35,
 //       r: Math.random() * 1.5 + 0.5,
 //     }));
