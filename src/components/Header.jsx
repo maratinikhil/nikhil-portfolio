@@ -198,7 +198,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, Download, Eye, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
-import resumeFile from "../assets/Nikhil_Devops_2Yr.s.pdf";
+import resumeFile from "../assets/Nikhil_DevOps.pdf";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);

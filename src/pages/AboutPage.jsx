@@ -25,6 +25,78 @@ import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Scroll-tide reveal helpers
+//
+// Previously every scroll-triggered element hand-rolled its own
+// initial/whileInView/viewport/transition props. That caused two real bugs:
+//   1. No `viewport.amount` threshold anywhere, so `once: true` fired the
+//      instant a single pixel of a tall card entered the screen — animations
+//      looked abrupt instead of timed to the scroll.
+//   2. Lists (responsibilities, competencies) animated each child with its
+//      own independent whileInView + a tiny index*0.04s delay. Since sibling
+//      items usually enter the viewport together, they all fired at once —
+//      there was no actual "tide" / cascade, just a near-simultaneous pop-in.
+//
+// Reveal() centralizes single-element reveals. staggerContainer/fadeUpItem
+// implement real parent -> child cascades for lists, triggered once by the
+// parent's own viewport intersection rather than by each child separately.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Reveal({
+  children,
+  as: Component = motion.div,
+  className,
+  direction = "up", // "up" | "down" | "left" | "right" | "none"
+  distance = 40,
+  delay = 0,
+  duration = 0.85,
+  once = true,
+  amount = 0.2,
+  margin,
+  ...rest
+}) {
+  const offsetMap = {
+    up: { y: distance },
+    down: { y: -distance },
+    left: { x: -distance },
+    right: { x: distance },
+    none: {},
+  };
+
+  return (
+    <Component
+      initial={{ opacity: 0, ...offsetMap[direction] }}
+      whileInView={{ opacity: 1, x: 0, y: 0 }}
+      viewport={{ once, amount, ...(margin ? { margin } : {}) }}
+      transition={{ duration, delay, ease: [0.16, 1, 0.3, 1] }}
+      className={className}
+      {...rest}
+    >
+      {children}
+    </Component>
+  );
+}
+
+const staggerContainer = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const fadeUpItem = {
+  hidden: { opacity: 0, y: 28 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Particle Canvas
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -140,9 +212,10 @@ function TypewriterTerminal() {
     }
 
     const delay = lineIdx === 0 ? 700 : 400;
+    let interval;
 
     const startTimer = setTimeout(() => {
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         setCharIdx((prev) => {
           const next = prev + 1;
 
@@ -162,7 +235,10 @@ function TypewriterTerminal() {
       }, 24);
     }, delay);
 
-    return () => clearTimeout(startTimer);
+    return () => {
+      clearTimeout(startTimer);
+      clearInterval(interval);
+    };
   }, [lineIdx]);
 
   const activeLine = lineIdx < LINES.length ? LINES[lineIdx] : null;
@@ -287,7 +363,7 @@ const experiences = [
     title: "Junior DevOps Engineer",
     company: "Naaima Embedded Technology",
     client: "Dr. Martens — E-Commerce Platform",
-    period: "April 2025 – June 2026",
+    period: "Jan 2025 – Present",
     type: "Full-time",
     status: "COMPLETED",
 
@@ -325,55 +401,6 @@ const experiences = [
       "Built and managed a Docker-based microservices architecture for a production e-commerce platform",
       "Established a multi-environment (Dev/Staging/Prod) workflow with Docker image versioning",
       "Contributed to Jenkins/Azure DevOps CI/CD pipelines, improving build stability and release efficiency",
-    ],
-  },
-
-  {
-    title: "DevOps Engineer",
-    company: "Naaima Embedded Technology",
-    client: "ShopFlow — Microservices E-Commerce Platform",
-    location: "Telangana, India",
-    period: "July 2026 – Present",
-    type: "Project",
-    status: "CURRENT PROJECT",
-
-    technologies: [
-      "AWS",
-      "Terraform",
-      "Docker",
-      "Docker Compose",
-      "Nginx",
-      "Django",
-      "MySQL",
-      "Linux",
-      "Git",
-      "GitHub",
-      "CloudWatch",
-    ],
-
-    stats: [
-      { value: "7", label: "Microservices" },
-      { value: "Multi-AZ", label: "AWS Architecture" },
-      { value: "ASG", label: "Auto Scaling" },
-      { value: "IaC", label: "Terraform" },
-    ],
-
-    responsibilities: [
-      "Designed and deployed a Dockerized microservices e-commerce platform comprising authentication, product, cart, profile, home, and order services.",
-      "Provisioned AWS infrastructure using Terraform, including VPC, multi-AZ subnets, Internet Gateway, NAT Gateway, route tables, security groups, and EC2 Auto Scaling Groups.",
-      "Implemented Auto Scaling Groups with Launch Templates and CloudWatch CPU-based scaling for scalable frontend and backend workloads.",
-      "Designed public/private network architecture with configurable Internet Gateway and NAT Gateway connectivity, including private backend instances without public IPs.",
-      "Built and managed Docker images and containers using Docker and Docker Compose, with Nginx-based frontend serving and API routing.",
-      "Troubleshot AWS networking, Docker, Django, MySQL, CORS, Nginx, API routing, and deployment issues across environments.",
-      "Applied Infrastructure-as-Code and DevOps practices using Terraform, Git, GitHub, AWS, Docker, and Linux.",
-    ],
-
-    achievements: [
-      "Architected a production-style microservices e-commerce platform with independent authentication, product, cart, profile, home, and order services.",
-      "Implemented a highly available AWS network architecture using VPC, multi-AZ subnets, Internet Gateway, NAT Gateway, and route tables.",
-      "Automated infrastructure provisioning using Terraform, enabling repeatable and consistent AWS deployments.",
-      "Implemented CPU-based Auto Scaling using EC2 Launch Templates, Auto Scaling Groups, and CloudWatch monitoring.",
-      "Designed secure private backend infrastructure where application instances can operate without direct public IP exposure.",
     ],
   },
 ];
@@ -441,168 +468,144 @@ const AboutPage = () => {
           <div className="absolute right-[-200px] top-1/3 w-[400px] h-[400px] rounded-full bg-blue-500/[0.04] blur-[120px]" />
 
           <div className="relative z-10 max-w-6xl mx-auto w-full pt-20">
-            <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-center">
-              {/* Hero text */}
-              <div>
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: 15,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.6,
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/25 bg-cyan-500/[0.06] text-cyan-400 text-[10px] font-mono tracking-[0.2em] uppercase"
-                >
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_12px_rgba(0,220,200,0.8)]" />
-                  The Engineer Behind the Stack
-                </motion.div>
+            <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: 15,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.6,
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/25 bg-cyan-500/[0.06] text-cyan-400 text-[10px] font-mono tracking-[0.2em] uppercase"
+              >
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_12px_rgba(0,220,200,0.8)]" />
+                The Engineer Behind the Stack
+              </motion.div>
 
-                <motion.p
-                  initial={{
-                    opacity: 0,
-                    y: 15,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    delay: 0.15,
-                  }}
-                  className="mt-8 text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase"
-                >
-                  DevOps / Cloud Engineer
-                </motion.p>
+              <motion.p
+                initial={{
+                  opacity: 0,
+                  y: 15,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  delay: 0.15,
+                }}
+                className="mt-8 text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase"
+              >
+                DevOps / Cloud Engineer
+              </motion.p>
 
-                <motion.h1
-                  initial={{
-                    opacity: 0,
-                    y: 35,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.9,
-                    delay: 0.25,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="mt-3 text-white uppercase leading-[0.82]"
+              <motion.h1
+                initial={{
+                  opacity: 0,
+                  y: 35,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.9,
+                  delay: 0.25,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="mt-3 text-white uppercase leading-[0.82]"
+                style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: "clamp(5rem, 12vw, 9rem)",
+                  letterSpacing: "0.015em",
+                }}
+              >
+                About
+                <span
+                  className="block text-transparent"
                   style={{
-                    fontFamily: "'Bebas Neue', sans-serif",
-                    fontSize: "clamp(5rem, 12vw, 9rem)",
-                    letterSpacing: "0.015em",
+                    WebkitTextStroke: "1.5px #00dcc8",
                   }}
                 >
-                  About
+                  Nikhil
+                </span>
+              </motion.h1>
+
+              <motion.p
+                initial={{
+                  opacity: 0,
+                  y: 15,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  delay: 0.55,
+                }}
+                className="mt-7 max-w-xl text-sm md:text-base text-gray-500 leading-7"
+              >
+                DevOps engineer passionate about automating everything, building
+                scalable cloud infrastructure, and creating deployment systems
+                that just work — at any scale.
+              </motion.p>
+
+              {/* Technology pills */}
+              <motion.div
+                initial={{
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                transition={{
+                  delay: 0.75,
+                }}
+                className="flex flex-wrap justify-center gap-2 mt-7"
+              >
+                {[
+                  "AWS",
+                  "Docker",
+                  "Terraform",
+                  "Kubernetes",
+                  "Jenkins",
+                  "Linux",
+                ].map((skill) => (
                   <span
-                    className="block text-transparent"
-                    style={{
-                      WebkitTextStroke: "1.5px #00dcc8",
-                    }}
+                    key={skill}
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.025] border border-white/[0.07] text-gray-400 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/25 transition-all"
                   >
-                    Nikhil
+                    {skill}
                   </span>
-                </motion.h1>
-
-                <motion.p
-                  initial={{
-                    opacity: 0,
-                    y: 15,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    delay: 0.55,
-                  }}
-                  className="mt-7 max-w-xl text-sm md:text-base text-gray-500 leading-7"
-                >
-                  DevOps engineer passionate about automating everything,
-                  building scalable cloud infrastructure, and creating
-                  deployment systems that just work — at any scale.
-                </motion.p>
-
-                {/* Technology pills */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                  }}
-                  animate={{
-                    opacity: 1,
-                  }}
-                  transition={{
-                    delay: 0.75,
-                  }}
-                  className="flex flex-wrap gap-2 mt-7"
-                >
-                  {[
-                    "AWS",
-                    "Docker",
-                    "Terraform",
-                    "Kubernetes",
-                    "Jenkins",
-                    "Linux",
-                  ].map((skill) => (
-                    <span
-                      key={skill}
-                      className="px-3 py-1.5 rounded-lg bg-white/[0.025] border border-white/[0.07] text-gray-400 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/25 transition-all"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </motion.div>
-
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                  }}
-                  animate={{
-                    opacity: 1,
-                  }}
-                  transition={{
-                    delay: 1.1,
-                  }}
-                  className="mt-10 flex items-center gap-3 text-[#5a7080]"
-                >
-                  <div className="w-8 h-px bg-cyan-500/50" />
-
-                  <span className="text-[9px] tracking-[0.25em] uppercase font-mono">
-                    Scroll to explore
-                  </span>
-
-                  <ArrowDown className="w-3 h-3 text-cyan-400 animate-bounce" />
-                </motion.div>
-              </div>
+                ))}
+              </motion.div>
 
               {/* Terminal */}
               <motion.div
                 initial={{
                   opacity: 0,
-                  x: 40,
+                  y: 20,
                 }}
                 animate={{
                   opacity: 1,
-                  x: 0,
+                  y: 0,
                 }}
                 transition={{
                   duration: 0.8,
-                  delay: 0.5,
+                  delay: 0.9,
                 }}
-                className="lg:mt-20"
+                className="mt-10 w-full max-w-md"
               >
                 <TypewriterTerminal />
 
                 {/* Mini status cards */}
                 <div className="grid grid-cols-2 gap-3 mt-3">
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] text-left">
                     <Zap className="w-4 h-4 text-cyan-400 mb-3" />
 
                     <p className="text-[9px] text-gray-600 uppercase tracking-wider font-mono">
@@ -616,7 +619,7 @@ const AboutPage = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] text-left">
                     <Server className="w-4 h-4 text-cyan-400 mb-3" />
 
                     <p className="text-[9px] text-gray-600 uppercase tracking-wider font-mono">
@@ -626,6 +629,27 @@ const AboutPage = () => {
                     <p className="text-xs text-white mt-1">Cloud & DevOps</p>
                   </div>
                 </div>
+              </motion.div>
+
+              <motion.div
+                initial={{
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                transition={{
+                  delay: 1.2,
+                }}
+                className="mt-10 flex items-center gap-3 text-[#5a7080]"
+              >
+                <div className="w-8 h-px bg-cyan-500/50" />
+
+                <span className="text-[9px] tracking-[0.25em] uppercase font-mono">
+                  Scroll to explore
+                </span>
+
+                <ArrowDown className="w-3 h-3 text-cyan-400 animate-bounce" />
               </motion.div>
             </div>
           </div>
@@ -662,21 +686,10 @@ const AboutPage = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 {/* Image */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    x: -30,
-                  }}
-                  whileInView={{
-                    opacity: 1,
-                    x: 0,
-                  }}
-                  viewport={{
-                    once: true,
-                  }}
-                  transition={{
-                    duration: 0.8,
-                  }}
+                <Reveal
+                  direction="left"
+                  distance={30}
+                  duration={0.8}
                   className="relative"
                 >
                   {/* Outer frame */}
@@ -740,25 +753,14 @@ const AboutPage = () => {
                       </div>
                     ))}
                   </div>
-                </motion.div>
+                </Reveal>
 
                 {/* Bio */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    x: 30,
-                  }}
-                  whileInView={{
-                    opacity: 1,
-                    x: 0,
-                  }}
-                  viewport={{
-                    once: true,
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.1,
-                  }}
+                <Reveal
+                  direction="right"
+                  distance={30}
+                  duration={0.8}
+                  delay={0.1}
                   className="space-y-6"
                 >
                   <div>
@@ -846,17 +848,13 @@ const AboutPage = () => {
                   </div>
 
                   <TypewriterTerminal />
-                </motion.div>
+                </Reveal>
               </div>
             </section>
 
             {/* ═══════════════════════════════════════════════════════════════
                 EXPERIENCE
             ═══════════════════════════════════════════════════════════════ */}
-
-            {/* ═══════════════════════════════════════════════════════════════
-    EXPERIENCE
-═══════════════════════════════════════════════════════════════ */}
 
             <section>
               <div className="flex items-center gap-3 mb-10">
@@ -873,24 +871,14 @@ const AboutPage = () => {
 
               <div className="relative pl-6 md:pl-10 border-l border-cyan-500/20 space-y-8">
                 {experiences.map((exp, i) => (
-                  <motion.div
+                  <Reveal
                     key={i}
-                    initial={{
-                      opacity: 0,
-                      y: 30,
-                    }}
-                    whileInView={{
-                      opacity: 1,
-                      y: 0,
-                    }}
-                    viewport={{
-                      once: true,
-                      margin: "-80px",
-                    }}
-                    transition={{
-                      duration: 0.7,
-                      delay: i * 0.12,
-                    }}
+                    direction="up"
+                    distance={30}
+                    duration={0.7}
+                    delay={i * 0.12}
+                    amount={0.15}
+                    margin="-80px"
                     className="relative"
                   >
                     {/* Timeline Dot */}
@@ -1057,24 +1045,17 @@ const AboutPage = () => {
                           <div className="flex-1 h-px bg-white/[0.05]" />
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-3">
+                        <motion.div
+                          className="grid md:grid-cols-2 gap-3"
+                          variants={staggerContainer}
+                          initial="hidden"
+                          whileInView="show"
+                          viewport={{ once: true, amount: 0.2 }}
+                        >
                           {exp.responsibilities.map((responsibility, ri) => (
                             <motion.div
                               key={ri}
-                              initial={{
-                                opacity: 0,
-                                x: -10,
-                              }}
-                              whileInView={{
-                                opacity: 1,
-                                x: 0,
-                              }}
-                              viewport={{
-                                once: true,
-                              }}
-                              transition={{
-                                delay: ri * 0.04,
-                              }}
+                              variants={fadeUpItem}
                               className="group/item flex items-start gap-3 p-3.5 rounded-xl bg-black/20 border border-white/[0.04] hover:border-cyan-500/15 hover:bg-cyan-500/[0.025] transition-all"
                             >
                               <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400/70 shrink-0 group-hover/item:shadow-[0_0_8px_rgba(0,220,200,0.8)]" />
@@ -1084,7 +1065,7 @@ const AboutPage = () => {
                               </span>
                             </motion.div>
                           ))}
-                        </div>
+                        </motion.div>
                       </div>
 
                       {/* ───────────────── Achievements ───────────────── */}
@@ -1120,7 +1101,7 @@ const AboutPage = () => {
                         </div>
                       )}
                     </div>
-                  </motion.div>
+                  </Reveal>
                 ))}
               </div>
             </section>
@@ -1142,25 +1123,17 @@ const AboutPage = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px rounded-3xl overflow-hidden border border-cyan-500/10 bg-cyan-500/10">
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px rounded-3xl overflow-hidden border border-cyan-500/10 bg-cyan-500/10"
+                variants={staggerContainer}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.1 }}
+              >
                 {highlights.map((highlight, i) => (
                   <motion.div
                     key={i}
-                    initial={{
-                      opacity: 0,
-                      y: 15,
-                    }}
-                    whileInView={{
-                      opacity: 1,
-                      y: 0,
-                    }}
-                    viewport={{
-                      once: true,
-                    }}
-                    transition={{
-                      duration: 0.45,
-                      delay: i * 0.06,
-                    }}
+                    variants={fadeUpItem}
                     className="group relative min-h-[150px] flex flex-col justify-between p-6 bg-[#03060d] hover:bg-cyan-500/[0.035] transition-all duration-300"
                   >
                     {/* Number */}
@@ -1181,25 +1154,19 @@ const AboutPage = () => {
                     <div className="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-cyan-500/0 group-hover:border-cyan-500/30 transition-all rounded-br-xl" />
                   </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </section>
 
             {/* ═══════════════════════════════════════════════════════════════
                 FINAL PHILOSOPHY
             ═══════════════════════════════════════════════════════════════ */}
 
-            <motion.section
-              initial={{
-                opacity: 0,
-                y: 30,
-              }}
-              whileInView={{
-                opacity: 1,
-                y: 0,
-              }}
-              viewport={{
-                once: true,
-              }}
+            <Reveal
+              as={motion.section}
+              direction="up"
+              distance={30}
+              duration={0.6}
+              amount={0.3}
             >
               <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.06] via-transparent to-transparent p-8 md:p-12">
                 <div className="absolute -right-20 -bottom-20 w-72 h-72 rounded-full bg-cyan-500/[0.06] blur-[100px]" />
@@ -1235,7 +1202,7 @@ const AboutPage = () => {
                   </div>
                 </div>
               </div>
-            </motion.section>
+            </Reveal>
           </div>
         </main>
 
