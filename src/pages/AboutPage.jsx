@@ -360,7 +360,7 @@ const highlights = [
 
 const experiences = [
   {
-    title: "Junior DevOps Engineer",
+    title: "DevOps Engineer",
     company: "Naaima Embedded Technology",
     client: "Dr. Martens — E-Commerce Platform",
     period: "Jan 2025 – Present",
